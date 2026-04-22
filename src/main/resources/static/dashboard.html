@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gestão | Vitor Rocha Advocacia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard-style.css">
+</head>
+<body class="dashboard-body">
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="brand">
+                <span class="brand-monogram">VR</span>
+                <span class="brand-text">
+                    <strong>Gestão Interna</strong>
+                    <small>Painel de Atendimento</small>
+                </span>
+            </div>
+            <div class="admin-actions">
+                <span class="admin-user">Dr. Vitor Rocha</span>
+                <a href="login.html" class="btn btn-sm btn-secondary">Sair</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-main">
+        <div class="dashboard-container">
+            <header class="dashboard-page-header">
+                <h2>Gerenciamento de Contatos</h2>
+                <div class="dashboard-filters">
+                    <button class="filter-btn active" data-filter="all">Todos</button>
+                    <button class="filter-btn" data-filter="novo_contato">Novos</button>
+                    <button class="filter-btn" data-filter="em_andamento">Em Andamento</button>
+                    <button class="filter-btn" data-filter="concluido">Concluídos</button>
+                </div>
+            </header>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-title">Novos Contatos</span>
+                    <strong class="stat-value" id="count-novos">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-title">Em Andamento</span>
+                    <strong class="stat-value" id="count-andamento">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-title">Total Cadastrado</span>
+                    <strong class="stat-value" id="count-total">0</strong>
+                </div>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Nome</th>
+                            <th>Contato</th>
+                            <th>Motivo</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leads-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+<div id="details-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Detalhes da Solicitação</h3>
+                <button class="close-btn" id="close-modal" aria-label="Fechar">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btn-close-modal-footer">Fechar Painel</button>
+            </div>
+        </div>
+    </div>
+    <script src="js/dashboard-script.js"></script>
+</body>
+</html>
