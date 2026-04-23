@@ -1,306 +1,318 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ══════════════════════════════════════════════
-    // AUTENTICAÇÃO — protege o painel
-    // ══════════════════════════════════════════════
+    // ── Proteção da rota ───────────────────────────────────────────────────────
     const token = localStorage.getItem('adv_token');
-    if (!token) {
+    if (!token) { window.location.href = '/login.html'; return; }
+
+    // ── Nome do admin ──────────────────────────────────────────────────────────
+    const nomeEl = document.querySelector('.admin-user');
+    if (nomeEl) nomeEl.textContent = localStorage.getItem('adv_user_nome') || 'Admin';
+
+    // ── Logout ─────────────────────────────────────────────────────────────────
+    document.querySelector('a[href="login.html"]')?.addEventListener('click', e => {
+        e.preventDefault();
+        ['adv_token','adv_user_nome','adv_user_email'].forEach(k => localStorage.removeItem(k));
         window.location.href = '/login.html';
-        return;
-    }
+    });
 
-    // Preenche o nome do usuário logado
-    const nomeUsuario = localStorage.getItem('adv_user_nome') || 'Administrador';
-    const adminUserEl = document.querySelector('.admin-user');
-    if (adminUserEl) adminUserEl.textContent = nomeUsuario;
-
-    // Botão de sair
-    const sairBtn = document.querySelector('a[href="login.html"]');
-    if (sairBtn) {
-        sairBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('adv_token');
-            localStorage.removeItem('adv_user_nome');
-            localStorage.removeItem('adv_user_email');
-            window.location.href = '/login.html';
+    // ── Helper de request autenticado ─────────────────────────────────────────
+    const api = async (url, opts = {}) => {
+        const res = await fetch(url, {
+            ...opts,
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(opts.headers || {}) }
         });
-    }
-
-    // Helper para requests autenticados
-    const apiRequest = async (url, options = {}) => {
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-            ...(options.headers || {})
-        };
-        const response = await fetch(url, { ...options, headers });
-        if (response.status === 401 || response.status === 403) {
+        if (res.status === 401 || res.status === 403) {
             localStorage.removeItem('adv_token');
             window.location.href = '/login.html';
             return null;
         }
-        return response;
+        return res;
     };
 
-    // ══════════════════════════════════════════════
-    // ESTADO LOCAL
-    // ══════════════════════════════════════════════
-    let allLeads     = [];
-    let filtroAtual  = 'all';
+    const esc = t => String(t || '').replace(/[&<>"']/g, m =>
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m]));
 
-    // ── Elementos DOM ─────────────────────────────
-    const tableBody      = document.getElementById('leads-table-body');
-    const filterButtons  = document.querySelectorAll('.filter-btn');
-    const modal          = document.getElementById('details-modal');
-    const closeModalBtn  = document.getElementById('close-modal');
-    const closeModalFBtn = document.getElementById('btn-close-modal-footer');
-    const modalBody      = document.getElementById('modal-body-content');
-
-    // ── Formata data ISO → pt-BR ──────────────────
-    const formatDate = (iso) => {
-        const date = new Date(iso);
-        return date.toLocaleDateString('pt-BR', {
-            day: '2-digit', month: '2-digit', year: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-        });
+    const fmtDate = iso => {
+        const d = new Date(iso);
+        return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     };
+    const fmtDateShort = iso => new Date(iso).toLocaleDateString('pt-BR');
 
-    // ── Labels de status ──────────────────────────
-    const statusLabel = {
-        'novo_contato':  'Novo',
-        'em_andamento':  'Em Andamento',
-        'concluido':     'Concluído'
-    };
+    // ══════════════════════════════════════════════════════════════════════════
+    // INJEÇÃO DO HTML DO PAINEL (tabs + seção de notícias)
+    // ══════════════════════════════════════════════════════════════════════════
+    const dashContainer = document.querySelector('.dashboard-container');
+    if (dashContainer) {
+        // Adiciona abas de navegação
+        const tabsHtml = `
+        <div class="dash-tabs" style="display:flex;gap:8px;margin-bottom:1.5rem;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:.75rem">
+            <button class="tab-btn active" data-tab="contatos" style="padding:.5rem 1.25rem;border:none;cursor:pointer;border-radius:6px;font-weight:500;background:var(--accent,#c9a84c);color:#fff">📋 Contatos</button>
+            <button class="tab-btn" data-tab="noticias" style="padding:.5rem 1.25rem;border:none;cursor:pointer;border-radius:6px;font-weight:500;background:transparent;color:inherit;border:1px solid rgba(255,255,255,.2)">📰 Notícias</button>
+        </div>`;
+        dashContainer.insertAdjacentHTML('afterbegin', tabsHtml);
 
-    // ══════════════════════════════════════════════
-    // CARREGA DADOS DO BACKEND
-    // ══════════════════════════════════════════════
-    const carregarLeads = async () => {
-        setTableLoading(true);
-        try {
-            const [leadsRes, statsRes] = await Promise.all([
-                apiRequest('/api/leads'),
-                apiRequest('/api/leads/stats')
-            ]);
+        // Seção de notícias (oculta por padrão)
+        dashContainer.insertAdjacentHTML('beforeend', `
+        <div id="section-noticias" style="display:none">
+            <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+                <h2 style="margin:0">Gerenciamento de Notícias</h2>
+                <button id="btn-nova-noticia" class="btn btn-primary btn-sm">+ Nova Notícia</button>
+            </header>
 
-            if (!leadsRes || !statsRes) return;
+            <!-- Formulário de criar/editar -->
+            <div id="form-noticia-wrap" style="display:none;background:rgba(255,255,255,.05);border-radius:10px;padding:1.5rem;margin-bottom:1.5rem">
+                <h3 id="form-noticia-title" style="margin-top:0">Nova Notícia</h3>
+                <div style="display:flex;flex-direction:column;gap:.75rem">
+                    <input id="n-titulo"    placeholder="Título *" style="padding:.6rem .9rem;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:inherit;font-size:.95rem"/>
+                    <input id="n-categoria" placeholder="Categoria (ex: Contratos, Patrimônio...)" style="padding:.6rem .9rem;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:inherit;font-size:.95rem"/>
+                    <textarea id="n-conteudo" rows="6" placeholder="Conteúdo da notícia *" style="padding:.6rem .9rem;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:inherit;font-size:.95rem;resize:vertical"></textarea>
+                    <div style="display:flex;gap:.5rem">
+                        <button id="btn-salvar-noticia" class="btn btn-primary btn-sm">Salvar</button>
+                        <button id="btn-cancelar-noticia" class="btn btn-secondary btn-sm">Cancelar</button>
+                    </div>
+                    <p id="noticia-msg" style="margin:0;font-size:.875rem"></p>
+                </div>
+            </div>
 
-            allLeads = await leadsRes.json();
-            const stats = await statsRes.json();
+            <!-- Tabela de notícias -->
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead><tr><th>Data</th><th>Categoria</th><th>Título</th><th>Ações</th></tr></thead>
+                    <tbody id="noticias-table-body"></tbody>
+                </table>
+            </div>
+        </div>`);
+    }
 
-            // Atualiza os contadores
-            document.getElementById('count-novos').textContent     = stats.novos     ?? 0;
-            document.getElementById('count-andamento').textContent = stats.em_andamento ?? 0;
-            document.getElementById('count-total').textContent     = stats.total      ?? 0;
+    // ── Navegação por abas ─────────────────────────────────────────────────────
+    const sectionContatos  = document.querySelector('.dashboard-page-header')?.parentElement;
+    const sectionNoticias  = document.getElementById('section-noticias');
 
-            renderTable(filtroAtual);
-
-        } catch (err) {
-            console.error('Erro ao carregar leads:', err);
-            tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">
-                Erro ao conectar com o servidor. Tente recarregar a página.
-            </td></tr>`;
-        } finally {
-            setTableLoading(false);
-        }
-    };
-
-    // ══════════════════════════════════════════════
-    // RENDERIZA TABELA
-    // ══════════════════════════════════════════════
-    const renderTable = (filtro = 'all') => {
-        tableBody.innerHTML = '';
-
-        const lista = filtro === 'all'
-            ? allLeads
-            : allLeads.filter(l => l.status === filtro);
-
-        if (lista.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">
-                Nenhum contato encontrado.
-            </td></tr>`;
-            return;
-        }
-
-        lista.forEach(lead => {
-            const tr = document.createElement('tr');
-            const dataFormatada = lead.dataRegistro ? formatDate(lead.dataRegistro) : '—';
-
-            tr.innerHTML = `
-                <td>${dataFormatada.split(',')[0]}</td>
-                <td><strong>${escapeHtml(lead.nome)}</strong></td>
-                <td>${escapeHtml(lead.contato)}</td>
-                <td class="cell-reason" title="${escapeHtml(lead.motivo)}">${escapeHtml(lead.motivo)}</td>
-                <td>
-                    <select class="status-select" data-id="${lead.id}" data-status="${lead.status}">
-                        <option value="novo_contato"  ${lead.status === 'novo_contato'  ? 'selected' : ''}>Novo</option>
-                        <option value="em_andamento"  ${lead.status === 'em_andamento'  ? 'selected' : ''}>Em Andamento</option>
-                        <option value="concluido"     ${lead.status === 'concluido'     ? 'selected' : ''}>Concluído</option>
-                    </select>
-                </td>
-                <td>
-                    <button class="action-btn view-details-btn" data-id="${lead.id}">Ver Detalhes</button>
-                    <button class="action-btn delete-btn" data-id="${lead.id}" style="margin-left:6px;background:rgba(239,68,68,0.15);color:#dc2626;border-color:rgba(239,68,68,0.3)">Excluir</button>
-                </td>
-            `;
-            tableBody.appendChild(tr);
-        });
-
-        // Eventos de status
-        document.querySelectorAll('.status-select').forEach(select => {
-            select.addEventListener('change', handleStatusChange);
-        });
-
-        // Eventos de detalhes
-        document.querySelectorAll('.view-details-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => openModal(+e.target.getAttribute('data-id')));
-        });
-
-        // Eventos de exclusão
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => handleDelete(+e.target.getAttribute('data-id')));
-        });
-    };
-
-    // ══════════════════════════════════════════════
-    // ATUALIZAR STATUS (API)
-    // ══════════════════════════════════════════════
-    const handleStatusChange = async (e) => {
-        const select    = e.target;
-        const id        = +select.getAttribute('data-id');
-        const novoStatus = select.value;
-        const anteriorStatus = select.getAttribute('data-status');
-
-        select.disabled = true;
-
-        try {
-            const res = await apiRequest(`/api/leads/${id}/status`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status: novoStatus })
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.style.background = 'transparent';
+                b.style.color = 'inherit';
+                b.style.border = '1px solid rgba(255,255,255,.2)';
             });
+            btn.style.background = 'var(--accent,#c9a84c)';
+            btn.style.color = '#fff';
+            btn.style.border = 'none';
 
-            if (res && res.ok) {
-                select.setAttribute('data-status', novoStatus);
-                // Atualiza no array local
-                const lead = allLeads.find(l => l.id === id);
-                if (lead) lead.status = novoStatus;
-                // Atualiza stats localmente
-                atualizarStats();
+            const tab = btn.getAttribute('data-tab');
+            if (tab === 'contatos') {
+                document.querySelector('.dashboard-page-header') && showSection('contatos');
             } else {
-                select.value = anteriorStatus;
-                alert('Erro ao atualizar status. Tente novamente.');
+                showSection('noticias');
+                carregarNoticias();
             }
-        } catch (err) {
-            select.value = anteriorStatus;
-            console.error('Erro ao atualizar status:', err);
-        } finally {
-            select.disabled = false;
-        }
-    };
-
-    // ══════════════════════════════════════════════
-    // EXCLUIR LEAD (API)
-    // ══════════════════════════════════════════════
-    const handleDelete = async (id) => {
-        if (!confirm('Tem certeza que deseja excluir este contato? Essa ação não pode ser desfeita.')) return;
-
-        try {
-            const res = await apiRequest(`/api/leads/${id}`, { method: 'DELETE' });
-            if (res && res.ok) {
-                allLeads = allLeads.filter(l => l.id !== id);
-                atualizarStats();
-                renderTable(filtroAtual);
-            } else {
-                alert('Erro ao excluir. Tente novamente.');
-            }
-        } catch (err) {
-            console.error('Erro ao excluir lead:', err);
-        }
-    };
-
-    // ── Recalcula stats localmente ────────────────
-    const atualizarStats = () => {
-        const novos     = allLeads.filter(l => l.status === 'novo_contato').length;
-        const andamento = allLeads.filter(l => l.status === 'em_andamento').length;
-
-        document.getElementById('count-novos').textContent     = novos;
-        document.getElementById('count-andamento').textContent = andamento;
-        document.getElementById('count-total').textContent     = allLeads.length;
-    };
-
-    // ══════════════════════════════════════════════
-    // FILTROS
-    // ══════════════════════════════════════════════
-    filterButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            filterButtons.forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            filtroAtual = e.target.getAttribute('data-filter');
-            renderTable(filtroAtual);
         });
     });
 
-    // ══════════════════════════════════════════════
-    // MODAL DE DETALHES
-    // ══════════════════════════════════════════════
-    const openModal = (id) => {
-        const lead = allLeads.find(l => l.id === id);
-        if (!lead) return;
+    function showSection(tab) {
+        // Contatos: tudo exceto section-noticias
+        const contatosEls = dashContainer.querySelectorAll(':scope > *:not(#section-noticias):not(.dash-tabs)');
+        contatosEls.forEach(el => el.style.display = tab === 'contatos' ? '' : 'none');
+        if (sectionNoticias) sectionNoticias.style.display = tab === 'noticias' ? '' : 'none';
+    }
 
-        modalBody.innerHTML = `
-            <div class="detail-group">
-                <label>ID da Solicitação</label>
-                <p>#${lead.id}</p>
-            </div>
-            <div class="detail-group">
-                <label>Data de Registro</label>
-                <p>${lead.dataRegistro ? formatDate(lead.dataRegistro) : '—'}</p>
-            </div>
-            <div class="detail-group">
-                <label>Nome Completo</label>
-                <p>${escapeHtml(lead.nome)}</p>
-            </div>
-            <div class="detail-group">
-                <label>Contato</label>
-                <p>${escapeHtml(lead.contato)}</p>
-            </div>
-            <div class="detail-group">
-                <label>Status</label>
-                <p>${statusLabel[lead.status] || lead.status}</p>
-            </div>
-            <div class="detail-group">
-                <label>Motivo / Resumo do Caso</label>
-                <p>${escapeHtml(lead.motivo)}</p>
-            </div>
-        `;
-        modal.classList.add('is-active');
+    // ══════════════════════════════════════════════════════════════════════════
+    // ABA CONTATOS
+    // ══════════════════════════════════════════════════════════════════════════
+    let todosContatos = [];
+    let filtroAtual   = 'all';
+
+    const tableBody     = document.getElementById('leads-table-body');
+    const filterBtns    = document.querySelectorAll('.filter-btn');
+    const modal         = document.getElementById('details-modal');
+    const modalBody     = document.getElementById('modal-body-content');
+    const closeBtns     = [document.getElementById('close-modal'), document.getElementById('btn-close-modal-footer')];
+
+    const carregarContatos = async () => {
+        if (tableBody) tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center">Carregando...</td></tr>`;
+        const [cRes, sRes] = await Promise.all([api('/api/contatos'), api('/api/contatos/stats')]);
+        if (!cRes || !sRes) return;
+
+        todosContatos = await cRes.json();
+        const stats   = await sRes.json();
+
+        document.getElementById('count-novos')     && (document.getElementById('count-novos').textContent     = stats.pendentes ?? 0);
+        document.getElementById('count-andamento') && (document.getElementById('count-andamento').textContent = stats.atendidos ?? 0);
+        document.getElementById('count-total')     && (document.getElementById('count-total').textContent     = stats.total ?? 0);
+
+        renderContatos(filtroAtual);
     };
 
-    const closeModal = () => modal.classList.remove('is-active');
-    closeModalBtn.addEventListener('click', closeModal);
-    closeModalFBtn.addEventListener('click', closeModal);
-    window.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-
-    // ══════════════════════════════════════════════
-    // HELPERS
-    // ══════════════════════════════════════════════
-    function setTableLoading(isLoading) {
-        if (isLoading) {
-            tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">
-                Carregando contatos...
-            </td></tr>`;
+    const renderContatos = (filtro) => {
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+        const lista = filtro === 'all' ? todosContatos : todosContatos.filter(c => c.status === filtro);
+        if (!lista.length) {
+            tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted,#888)">Nenhum contato encontrado.</td></tr>`;
+            return;
         }
-    }
+        lista.forEach(c => {
+            const data = c.dataEnvio ? fmtDate(c.dataEnvio).split(',')[0] : '—';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${data}</td>
+                <td><strong>${esc(c.cliente?.nome)}</strong></td>
+                <td>${esc(c.cliente?.email || c.cliente?.telefone || '—')}</td>
+                <td class="cell-reason" title="${esc(c.mensagem)}">${esc(c.mensagem)}</td>
+                <td>
+                    <select class="status-select" data-id="${c.idContato}" data-status="${c.status}">
+                        <option value="pendente"  ${c.status==='pendente'  ? 'selected':''}>Pendente</option>
+                        <option value="atendido"  ${c.status==='atendido'  ? 'selected':''}>Atendido</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="action-btn view-btn" data-id="${c.idContato}">Ver</button>
+                    <button class="action-btn del-btn" data-id="${c.idContato}" style="margin-left:6px;background:rgba(239,68,68,.15);color:#dc2626;border-color:rgba(239,68,68,.3)">Excluir</button>
+                </td>`;
+            tableBody.appendChild(tr);
+        });
 
-    function escapeHtml(text) {
-        if (!text) return '';
-        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-        return String(text).replace(/[&<>"']/g, m => map[m]);
-    }
+        tableBody.querySelectorAll('.status-select').forEach(s => s.addEventListener('change', handleStatusChange));
+        tableBody.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', e => abrirModal(+e.target.dataset.id)));
+        tableBody.querySelectorAll('.del-btn').forEach(b => b.addEventListener('click', e => deletarContato(+e.target.dataset.id)));
+    };
 
-    // ── Inicializa ────────────────────────────────
-    carregarLeads();
+    const handleStatusChange = async (e) => {
+        const sel = e.target, id = +sel.dataset.id, ant = sel.dataset.status;
+        sel.disabled = true;
+        const res = await api(`/api/contatos/${id}/status`, { method:'PATCH', body: JSON.stringify({ status: sel.value }) });
+        if (res?.ok) {
+            sel.dataset.status = sel.value;
+            const c = todosContatos.find(x => x.idContato === id);
+            if (c) c.status = sel.value;
+        } else {
+            sel.value = ant;
+            alert('Erro ao atualizar status.');
+        }
+        sel.disabled = false;
+    };
 
-    // Atualiza os leads a cada 30 segundos
-    setInterval(carregarLeads, 30000);
+    const deletarContato = async (id) => {
+        if (!confirm('Excluir este contato?')) return;
+        const res = await api(`/api/contatos/${id}`, { method:'DELETE' });
+        if (res?.ok) { todosContatos = todosContatos.filter(c => c.idContato !== id); renderContatos(filtroAtual); }
+    };
+
+    const abrirModal = (id) => {
+        const c = todosContatos.find(x => x.idContato === id);
+        if (!c || !modalBody) return;
+        modalBody.innerHTML = `
+            <div class="detail-group"><label>ID</label><p>#${c.idContato}</p></div>
+            <div class="detail-group"><label>Data</label><p>${c.dataEnvio ? fmtDate(c.dataEnvio) : '—'}</p></div>
+            <div class="detail-group"><label>Cliente</label><p>${esc(c.cliente?.nome)}</p></div>
+            <div class="detail-group"><label>Contato</label><p>${esc(c.cliente?.email || c.cliente?.telefone || '—')}</p></div>
+            <div class="detail-group"><label>Status</label><p>${c.status === 'pendente' ? 'Pendente' : 'Atendido'}</p></div>
+            <div class="detail-group"><label>Mensagem</label><p>${esc(c.mensagem)}</p></div>`;
+        modal?.classList.add('is-active');
+    };
+
+    filterBtns.forEach(b => b.addEventListener('click', e => {
+        filterBtns.forEach(x => x.classList.remove('active'));
+        e.target.classList.add('active');
+        filtroAtual = e.target.dataset.filter;
+        renderContatos(filtroAtual);
+    }));
+
+    closeBtns.forEach(b => b?.addEventListener('click', () => modal?.classList.remove('is-active')));
+    window.addEventListener('click', e => { if (e.target === modal) modal?.classList.remove('is-active'); });
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // ABA NOTÍCIAS
+    // ══════════════════════════════════════════════════════════════════════════
+    let editandoId = null;
+
+    const tbNoticias = document.getElementById('noticias-table-body');
+    const formWrap   = document.getElementById('form-noticia-wrap');
+    const nMsg       = document.getElementById('noticia-msg');
+
+    document.getElementById('btn-nova-noticia')?.addEventListener('click', () => {
+        editandoId = null;
+        document.getElementById('form-noticia-title').textContent = 'Nova Notícia';
+        document.getElementById('n-titulo').value    = '';
+        document.getElementById('n-categoria').value = '';
+        document.getElementById('n-conteudo').value  = '';
+        if (nMsg) nMsg.textContent = '';
+        formWrap.style.display = '';
+    });
+
+    document.getElementById('btn-cancelar-noticia')?.addEventListener('click', () => {
+        formWrap.style.display = 'none';
+        editandoId = null;
+    });
+
+    document.getElementById('btn-salvar-noticia')?.addEventListener('click', async () => {
+        const titulo    = document.getElementById('n-titulo').value.trim();
+        const categoria = document.getElementById('n-categoria').value.trim();
+        const conteudo  = document.getElementById('n-conteudo').value.trim();
+
+        if (!titulo || !conteudo) { if (nMsg) { nMsg.textContent = 'Título e conteúdo são obrigatórios.'; nMsg.style.color = '#dc2626'; } return; }
+
+        const body = JSON.stringify({ titulo, categoria, conteudo });
+        const res  = editandoId
+            ? await api(`/api/noticias/${editandoId}`, { method:'PUT', body })
+            : await api('/api/noticias', { method:'POST', body });
+
+        if (res?.ok) {
+            if (nMsg) { nMsg.textContent = editandoId ? 'Notícia atualizada!' : 'Notícia publicada!'; nMsg.style.color = '#16a34a'; }
+            formWrap.style.display = 'none';
+            editandoId = null;
+            carregarNoticias();
+        } else {
+            if (nMsg) { nMsg.textContent = 'Erro ao salvar. Tente novamente.'; nMsg.style.color = '#dc2626'; }
+        }
+    });
+
+    const carregarNoticias = async () => {
+        if (tbNoticias) tbNoticias.innerHTML = `<tr><td colspan="4" style="text-align:center">Carregando...</td></tr>`;
+        const res = await api('/api/noticias');
+        if (!res) return;
+        const lista = await res.json();
+        if (!tbNoticias) return;
+        tbNoticias.innerHTML = '';
+        if (!lista.length) {
+            tbNoticias.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#888">Nenhuma notícia publicada.</td></tr>`;
+            return;
+        }
+        lista.forEach(n => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${fmtDateShort(n.dataPublicacao)}</td>
+                <td>${esc(n.categoria || 'Geral')}</td>
+                <td><strong>${esc(n.titulo)}</strong></td>
+                <td>
+                    <button class="action-btn edit-n-btn" data-id="${n.idNoticia}">Editar</button>
+                    <button class="action-btn del-n-btn" data-id="${n.idNoticia}" style="margin-left:6px;background:rgba(239,68,68,.15);color:#dc2626;border-color:rgba(239,68,68,.3)">Excluir</button>
+                </td>`;
+            tbNoticias.appendChild(tr);
+        });
+
+        tbNoticias.querySelectorAll('.edit-n-btn').forEach(b => b.addEventListener('click', async e => {
+            const id  = +e.target.dataset.id;
+            const res = await api(`/api/noticias/${id}`); // busca via rota pública
+            if (!res) return;
+            const n = await (await fetch(`/api/noticias/publicas/${id}`)).json();
+            editandoId = id;
+            document.getElementById('form-noticia-title').textContent = 'Editar Notícia';
+            document.getElementById('n-titulo').value    = n.titulo || '';
+            document.getElementById('n-categoria').value = n.categoria || '';
+            document.getElementById('n-conteudo').value  = n.conteudo || '';
+            if (nMsg) nMsg.textContent = '';
+            formWrap.style.display = '';
+        }));
+
+        tbNoticias.querySelectorAll('.del-n-btn').forEach(b => b.addEventListener('click', async e => {
+            if (!confirm('Excluir esta notícia?')) return;
+            const res = await api(`/api/noticias/${+e.target.dataset.id}`, { method:'DELETE' });
+            if (res?.ok) carregarNoticias();
+        }));
+    };
+
+    // ── Inicializa ─────────────────────────────────────────────────────────────
+    carregarContatos();
+    setInterval(carregarContatos, 30000);
 });

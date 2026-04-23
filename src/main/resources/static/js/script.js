@@ -1,165 +1,133 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ── Ano no rodapé ──────────────────────────────
-    const yearSpan = document.getElementById('current-year');
-    if (yearSpan) yearSpan.textContent = new Date().getFullYear();
+    // ── Ano no rodapé ──────────────────────────────────────────────────────────
+    const yearEl = document.getElementById('current-year');
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-    // ── Header scroll ──────────────────────────────
-    const header = document.getElementById('main-header');
-    const menuToggle = document.getElementById('menu-toggle');
-    const navMenu = document.getElementById('nav-menu');
+    // ── Header scroll ──────────────────────────────────────────────────────────
+    const header      = document.getElementById('main-header');
+    const menuToggle  = document.getElementById('menu-toggle');
+    const navMenu     = document.getElementById('nav-menu');
 
-    const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 24);
-    onScroll();
-    window.addEventListener('scroll', onScroll);
+    if (header) {
+        const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 24);
+        onScroll();
+        window.addEventListener('scroll', onScroll);
+    }
 
-    menuToggle.addEventListener('click', () => {
-        const isOpen = navMenu.classList.toggle('active');
-        menuToggle.setAttribute('aria-expanded', String(isOpen));
-    });
+    if (menuToggle && navMenu) {
+        menuToggle.addEventListener('click', () => {
+            const open = navMenu.classList.toggle('active');
+            menuToggle.setAttribute('aria-expanded', String(open));
+        });
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) navMenu.classList.remove('active');
+        });
+    }
 
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 768 && navMenu.classList.contains('active')) {
-            navMenu.classList.remove('active');
-            menuToggle.setAttribute('aria-expanded', 'false');
-        }
-    });
-
-    // ── Smooth scroll ──────────────────────────────
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            const targetId = this.getAttribute('href');
-            if (!targetId || targetId === '#') return;
-            const targetElement = document.querySelector(targetId);
-            if (!targetElement) return;
+    // ── Smooth scroll ──────────────────────────────────────────────────────────
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', function (e) {
+            const id = this.getAttribute('href');
+            if (!id || id === '#') return;
+            const el = document.querySelector(id);
+            if (!el) return;
             e.preventDefault();
-            if (navMenu.classList.contains('active')) {
-                navMenu.classList.remove('active');
-                menuToggle.setAttribute('aria-expanded', 'false');
-            }
-            const headerOffset = header.offsetHeight;
-            const offsetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerOffset + 1;
-            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+            navMenu && navMenu.classList.remove('active');
+            const top = el.getBoundingClientRect().top + window.pageYOffset - (header ? header.offsetHeight : 0) + 1;
+            window.scrollTo({ top, behavior: 'smooth' });
         });
     });
 
-    // ── Reveal on scroll ──────────────────────────
-    const revealItems = document.querySelectorAll('.reveal-on-scroll');
-    if ('IntersectionObserver' in window && revealItems.length > 0) {
-        const revealObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                    observer.unobserve(entry.target);
-                }
-            });
+    // ── Reveal on scroll ──────────────────────────────────────────────────────
+    const items = document.querySelectorAll('.reveal-on-scroll');
+    if ('IntersectionObserver' in window && items.length) {
+        const obs = new IntersectionObserver((entries, o) => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-visible'); o.unobserve(e.target); } });
         }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
-        revealItems.forEach(item => revealObserver.observe(item));
+        items.forEach(i => obs.observe(i));
     } else {
-        revealItems.forEach(item => item.classList.add('is-visible'));
+        items.forEach(i => i.classList.add('is-visible'));
     }
 
-    // ── Tema claro/escuro ─────────────────────────
-    const themeToggleBtn = document.getElementById('theme-toggle');
-    const rootHtml = document.documentElement;
+    // ── Tema claro/escuro ──────────────────────────────────────────────────────
+    const themeBtn = document.getElementById('theme-toggle');
+    const root     = document.documentElement;
+    if (themeBtn) {
+        const saved = localStorage.getItem('adv_theme');
+        root.setAttribute('data-theme', saved === 'dark' ? '' : 'light');
+        if (saved === 'dark') root.removeAttribute('data-theme');
 
-    if (themeToggleBtn) {
-        const savedTheme = localStorage.getItem('adv_theme');
-        if (savedTheme === 'dark') {
-            rootHtml.removeAttribute('data-theme');
-        } else {
-            rootHtml.setAttribute('data-theme', 'light');
-        }
-
-        themeToggleBtn.addEventListener('click', () => {
-            const isLight = rootHtml.getAttribute('data-theme') === 'light';
-            if (isLight) {
-                rootHtml.removeAttribute('data-theme');
-                localStorage.setItem('adv_theme', 'dark');
-            } else {
-                rootHtml.setAttribute('data-theme', 'light');
-                localStorage.setItem('adv_theme', 'light');
-            }
+        themeBtn.addEventListener('click', () => {
+            const isLight = root.getAttribute('data-theme') === 'light';
+            if (isLight) { root.removeAttribute('data-theme'); localStorage.setItem('adv_theme', 'dark'); }
+            else          { root.setAttribute('data-theme', 'light'); localStorage.setItem('adv_theme', 'light'); }
         });
     }
 
-    // ══════════════════════════════════════════════
-    // FORMULÁRIO DE CONTATO → API BACKEND REAL
-    // ══════════════════════════════════════════════
-    const leadForm = document.getElementById('lead-form');
-
-    if (leadForm) {
-        leadForm.addEventListener('submit', async (e) => {
+    // ══════════════════════════════════════════════════════════════════════════
+    // FORMULÁRIO DE CONTATO → API /api/contatos/publico
+    // Cria Cliente + Contato conforme o DER
+    // ══════════════════════════════════════════════════════════════════════════
+    const form = document.getElementById('lead-form');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const btnSubmit = leadForm.querySelector('button[type="submit"]');
-            const originalText = btnSubmit.textContent;
+            const btn  = form.querySelector('button[type="submit"]');
+            const orig = btn.textContent;
 
-            const leadData = {
-                nome:    document.getElementById('client-name').value.trim(),
-                contato: document.getElementById('client-contact').value.trim(),
-                motivo:  document.getElementById('client-reason').value.trim()
+            const payload = {
+                nome:     document.getElementById('client-name').value.trim(),
+                contato:  document.getElementById('client-contact').value.trim(),
+                mensagem: document.getElementById('client-reason').value.trim()
             };
 
-            // Validação simples
-            if (!leadData.nome || !leadData.contato || !leadData.motivo) {
-                showFormMessage(leadForm, 'Por favor, preencha todos os campos.', 'error');
+            if (!payload.nome || !payload.contato || !payload.mensagem) {
+                showMsg(form, 'Preencha todos os campos.', 'error');
                 return;
             }
 
-            btnSubmit.disabled = true;
-            btnSubmit.textContent = 'Enviando...';
-            removeFormMessage(leadForm);
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            clearMsg(form);
 
             try {
-                const response = await fetch('/api/leads/publico', {
+                const res  = await fetch('/api/contatos/publico', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(leadData)
+                    body: JSON.stringify(payload)
                 });
+                const data = await res.json();
 
-                const data = await response.json();
-
-                if (response.ok) {
-                    showFormMessage(leadForm, '✅ Solicitação enviada com sucesso! Retornaremos em breve.', 'success');
-                    leadForm.reset();
+                if (res.ok) {
+                    showMsg(form, '✅ Mensagem enviada! Retornaremos em breve.', 'success');
+                    form.reset();
                 } else {
-                    const erroMsg = data.erro || data.message || 'Não foi possível enviar. Tente novamente.';
-                    showFormMessage(leadForm, '❌ ' + erroMsg, 'error');
+                    showMsg(form, '❌ ' + (data.erro || 'Erro ao enviar. Tente novamente.'), 'error');
                 }
-
-            } catch (err) {
-                console.error('Erro ao enviar formulário:', err);
-                showFormMessage(leadForm, '❌ Erro de conexão. Verifique sua internet e tente novamente.', 'error');
+            } catch {
+                showMsg(form, '❌ Erro de conexão. Verifique sua internet.', 'error');
             } finally {
-                btnSubmit.disabled = false;
-                btnSubmit.textContent = originalText;
+                btn.disabled = false;
+                btn.textContent = orig;
             }
         });
     }
 
-    // ── Helpers de mensagem no formulário ─────────
-    function showFormMessage(form, text, type) {
-        removeFormMessage(form);
-        const msg = document.createElement('p');
-        msg.id = 'form-feedback';
-        msg.textContent = text;
-        msg.style.cssText = `
-            margin-top: 1rem;
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-align: center;
-            background: ${type === 'success' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'};
-            color: ${type === 'success' ? '#16a34a' : '#dc2626'};
-            border: 1px solid ${type === 'success' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'};
-        `;
-        form.appendChild(msg);
+    function showMsg(form, text, type) {
+        clearMsg(form);
+        const p = document.createElement('p');
+        p.id = 'form-msg';
+        p.textContent = text;
+        p.style.cssText = `margin-top:1rem;padding:.75rem 1rem;border-radius:6px;font-size:.9rem;font-weight:500;
+            text-align:center;
+            background:${type === 'success' ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)'};
+            color:${type === 'success' ? '#16a34a' : '#dc2626'};
+            border:1px solid ${type === 'success' ? 'rgba(34,197,94,.3)' : 'rgba(239,68,68,.3)'}`;
+        form.appendChild(p);
     }
-
-    function removeFormMessage(form) {
-        const existing = document.getElementById('form-feedback');
-        if (existing) existing.remove();
+    function clearMsg(form) {
+        document.getElementById('form-msg')?.remove();
     }
 });

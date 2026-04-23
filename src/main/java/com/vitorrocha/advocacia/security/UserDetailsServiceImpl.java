@@ -1,13 +1,10 @@
 package com.vitorrocha.advocacia.security;
 
-import com.vitorrocha.advocacia.model.Usuario;
-import com.vitorrocha.advocacia.repository.UsuarioRepository;
+import com.vitorrocha.advocacia.model.Administrador;
+import com.vitorrocha.advocacia.repository.AdministradorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,17 +13,17 @@ import java.util.List;
 public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Autowired
-    private UsuarioRepository usuarioRepository;
+    private AdministradorRepository adminRepo;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
+        Administrador admin = adminRepo.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Admin não encontrado: " + email));
 
         return new User(
-                usuario.getEmail(),
-                usuario.getSenha(),
-                List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRole()))
+                admin.getEmail(),
+                admin.getSenha(),
+                List.of(new SimpleGrantedAuthority("ROLE_" + admin.getRole()))
         );
     }
 }

@@ -18,40 +18,30 @@ import java.io.IOException;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtils jwtUtils;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
+    @Autowired private JwtUtils jwtUtils;
+    @Autowired private UserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
+    protected void doFilterInternal(HttpServletRequest req,
+                                    HttpServletResponse res,
+                                    FilterChain chain) throws ServletException, IOException {
+        String header = req.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
             try {
-                String username = jwtUtils.getUsernameFromToken(token);
-
-                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-                    if (jwtUtils.validateToken(token, userDetails)) {
-                        UsernamePasswordAuthenticationToken authToken =
-                                new UsernamePasswordAuthenticationToken(
-                                        userDetails, null, userDetails.getAuthorities());
-                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                String email = jwtUtils.getEmailFromToken(token);
+                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails user = userDetailsService.loadUserByUsername(email);
+                    if (jwtUtils.validateToken(token, user)) {
+                        var auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+                        SecurityContextHolder.getContext().setAuthentication(auth);
                     }
                 }
             } catch (Exception e) {
-                logger.warn("JWT inválido ou expirado: " + e.getMessage());
+                logger.warn("JWT inválido: " + e.getMessage());
             }
         }
-
-        filterChain.doFilter(request, response);
+        chain.doFilter(req, res);
     }
 }
