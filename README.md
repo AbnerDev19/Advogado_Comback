@@ -1,145 +1,199 @@
-# Vitor Rocha Advocacia — Backend Java (atualizado)
+# Vitor Rocha — Advocacia e Assessoria Jurídica
+## Sistema Web — PI3 IFB | Sprint 3
 
-Backend completo em **Java 17 + Spring Boot 3**, fiel ao DER do projeto.
-
----
-
-## 🗄️ Modelo de dados (DER)
-
-```
-ADMINISTRADOR (id_admin, nome, email, senha)
-      │
-      └──▶ NOTICIA (id_noticia, titulo, conteudo, categoria, data_publicacao, id_admin FK)
-
-CLIENTE (id_cliente, nome, email, telefone)
-      │
-      └──▶ CONTATO (id_contato, mensagem, data_envio, status[pendente|atendido], id_cliente FK)
-```
+Repositório do Projeto Integrador III desenvolvido no Instituto Federal de Brasília (IFB).
+Sistema web para o escritório **Vitor Rocha — Advocacia e Assessoria Jurídica**, com front-end institucional, API REST em Java Spring Boot e banco de dados PostgreSQL.
 
 ---
 
-## 🚀 Como rodar
+## Estado atual do sistema (Sprint 3)
 
-### Pré-requisitos
+| Módulo | Status |
+|---|---|
+| Front-end institucional (index, noticias) | ✅ Implementado |
+| Front-end dashboard (layout) | ✅ Implementado |
+| API — Autenticação (JWT) | ✅ Implementado |
+| API — Gestão de Leads | ✅ Implementado |
+| API — Gestão de Artigos | ✅ Implementado |
+| Banco de dados (PostgreSQL) | ✅ Implementado |
+| Integração front-end ↔ back-end | 🔜 Sprint 4 |
+
+---
+
+## Tecnologias
+
+| Camada | Tecnologia |
+|---|---|
+| Front-end | HTML5, CSS3, JavaScript (Vanilla) |
+| Back-end | Java 17, Spring Boot 3.2, Spring Security, JPA/Hibernate |
+| Banco de dados | PostgreSQL 15+ |
+| Autenticação | JWT (JSON Web Token) |
+| Build | Maven 3.9+ |
+
+---
+
+## Pré-requisitos
+
 - Java 17+
-- Maven 3.8+
+- Maven 3.9+
+- PostgreSQL 15+
+
+---
+
+## Setup e execução
+
+### 1. Clonar o repositório
 
 ```bash
-cd adv-backend
+git clone https://github.com/SEU_USUARIO/advogado-pi3.git
+cd advogado-pi3
+```
+
+### 2. Criar o banco de dados
+
+```sql
+CREATE DATABASE advogado_db;
+```
+
+### 3. Configurar credenciais
+
+Editar `api/src/main/resources/application.properties`:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/advogado_db
+spring.datasource.username=SEU_USUARIO
+spring.datasource.password=SUA_SENHA
+```
+
+### 4. Executar a API
+
+```bash
+cd api
 mvn spring-boot:run
 ```
 
-Acesse: **http://localhost:8080**
+A API iniciará em `http://localhost:8080`
+
+O schema e os dados de seed são criados automaticamente na primeira execução.
 
 ---
 
-## 🔐 Credenciais do painel admin
+## Credenciais padrão (seed)
 
-| Campo  | Valor                     |
-|--------|---------------------------|
-| E-mail | `admin@vitorrocha.adv.br` |
-| Senha  | `Advogado@2024`           |
-
-> Altere em `application.properties` antes de publicar.
+| Campo | Valor |
+|---|---|
+| E-mail | admin@vitorrochaadv.com.br |
+| Senha | admin123 |
 
 ---
 
-## 📄 Páginas
+## Endpoints da API
 
-| URL | Descrição |
-|-----|-----------|
-| `/` | Site principal |
-| `/login.html` | Login do painel |
-| `/dashboard.html` | Painel (contatos + notícias) |
-| `/noticias.html` | Notícias dinâmicas da API |
-| `/h2-console` | Console do banco (dev) |
+### Autenticação
 
----
-
-## 🔌 API REST
-
-### Auth
 | Método | Rota | Acesso | Descrição |
-|--------|------|--------|-----------|
-| POST | `/api/auth/login` | Público | Retorna JWT |
-| GET | `/api/auth/me` | Privado | Dados do admin |
+|---|---|---|---|
+| POST | `/api/auth/login` | Público | Autenticar e receber JWT |
 
-### Contatos
+### Leads (formulário de contato)
+
 | Método | Rota | Acesso | Descrição |
-|--------|------|--------|-----------|
-| POST | `/api/contatos/publico` | **Público** | Formulário do site (cria Cliente + Contato) |
-| GET | `/api/contatos` | Privado | Lista contatos |
-| GET | `/api/contatos?status=pendente` | Privado | Filtra por status |
-| PATCH | `/api/contatos/{id}/status` | Privado | Atualiza status |
-| DELETE | `/api/contatos/{id}` | Privado | Remove contato |
-| GET | `/api/contatos/stats` | Privado | Estatísticas |
+|---|---|---|---|
+| POST | `/api/leads` | Público | Criar lead (formulário do site) |
+| GET | `/api/leads` | 🔒 JWT | Listar todos os leads |
+| GET | `/api/leads?status=NOVO_CONTATO` | 🔒 JWT | Filtrar por status |
+| GET | `/api/leads/stats` | 🔒 JWT | Contadores por status |
+| GET | `/api/leads/{id}` | 🔒 JWT | Detalhar lead |
+| PUT | `/api/leads/{id}/status` | 🔒 JWT | Atualizar status |
+| PUT | `/api/leads/{id}/notas` | 🔒 JWT | Salvar notas internas |
+| DELETE | `/api/leads/{id}` | 🔒 JWT | Excluir lead |
 
-**Status disponíveis:** `pendente` · `atendido`
+### Artigos
 
-### Notícias
 | Método | Rota | Acesso | Descrição |
-|--------|------|--------|-----------|
-| GET | `/api/noticias/publicas` | **Público** | Lista para noticias.html |
-| GET | `/api/noticias/publicas/{id}` | **Público** | Detalhe de uma notícia |
-| GET | `/api/noticias` | Privado | Lista para o painel |
-| POST | `/api/noticias` | Privado | Publica nova notícia |
-| PUT | `/api/noticias/{id}` | Privado | Edita notícia |
-| DELETE | `/api/noticias/{id}` | Privado | Remove notícia |
+|---|---|---|---|
+| GET | `/api/artigos` | Público | Listar artigos publicados |
+| GET | `/api/artigos/{slug}` | Público | Buscar artigo por slug |
+| GET | `/api/artigos/admin` | 🔒 JWT | Listar todos (inc. rascunhos) |
+| POST | `/api/artigos` | 🔒 JWT | Criar artigo |
+| PUT | `/api/artigos/{id}` | 🔒 JWT | Atualizar artigo |
+| DELETE | `/api/artigos/{id}` | 🔒 JWT | Excluir artigo |
 
----
-
-## 🔄 Trocar H2 → PostgreSQL (produção)
-
-No `application.properties`, comente as linhas H2 e descomente as PostgreSQL:
-
-```properties
-spring.datasource.url=jdbc:postgresql://SEU_HOST:5432/SEU_BANCO
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.datasource.username=SEU_USUARIO
-spring.datasource.password=SUA_SENHA
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.h2.console.enabled=false
-```
-
-O arquivo `schema.sql` na raiz do projeto pode ser usado para criar as tabelas manualmente no PostgreSQL.
-
----
-
-## 🏗️ Estrutura
+### Status de leads
 
 ```
-adv-backend/
-├── pom.xml
-├── schema.sql                          ← SQL do modelo físico
-├── README.md
-└── src/main/
-    ├── java/com/vitorrocha/advocacia/
-    │   ├── model/
-    │   │   ├── Administrador.java      ← Entidade ADMINISTRADOR
-    │   │   ├── Cliente.java            ← Entidade CLIENTE
-    │   │   ├── Contato.java            ← Entidade CONTATO (status: pendente/atendido)
-    │   │   └── Noticia.java            ← Entidade NOTICIA
-    │   ├── repository/                 ← Interfaces JPA
-    │   ├── service/
-    │   │   ├── ContatoService.java     ← Cria Cliente + Contato do formulário
-    │   │   └── NoticiaService.java
-    │   ├── controller/
-    │   │   ├── AuthController.java
-    │   │   ├── ContatoController.java
-    │   │   └── NoticiaController.java
-    │   ├── security/                   ← JWT + filtros
-    │   └── config/                     ← Security + DataInitializer
-    └── resources/
-        ├── application.properties
-        └── static/                     ← Frontend completo
-            ├── index.html
-            ├── login.html
-            ├── dashboard.html          ← Abas: Contatos + Notícias
-            ├── noticias.html           ← Notícias dinâmicas da API
-            ├── css/
-            └── js/
-                ├── script.js           ← Formulário de contato → API
-                ├── login-script.js     ← Autenticação JWT
-                ├── dashboard-script.js ← Painel completo
-                └── noticias-script.js  ← Carrega notícias da API
+NOVO_CONTATO | EM_ANDAMENTO | CONCLUIDO | ARQUIVADO
 ```
+
+---
+
+## Exemplos de uso (Postman / curl)
+
+### Login
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@vitorrochaadv.com.br","senha":"admin123"}'
+```
+
+### Criar lead (formulário do site)
+```bash
+curl -X POST http://localhost:8080/api/leads \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "Maria Souza",
+    "contato": "(61) 9 9999-0000",
+    "area": "IMOBILIARIO",
+    "motivo": "Preciso revisar um contrato de compra e venda de imóvel."
+  }'
+```
+
+### Listar leads (autenticado)
+```bash
+curl http://localhost:8080/api/leads \
+  -H "Authorization: Bearer SEU_TOKEN_JWT"
+```
+
+---
+
+## Estrutura do repositório
+
+```
+advogado-pi3/
+├── api/                        # Back-end Spring Boot
+│   ├── pom.xml
+│   └── src/main/
+│       ├── java/br/com/vitorrocha/api/
+│       │   ├── controller/     # AuthController, LeadController, ArtigoController
+│       │   ├── model/          # Lead, Usuario, Artigo (entidades JPA)
+│       │   ├── repository/     # Interfaces Spring Data JPA
+│       │   ├── service/        # Regras de negócio
+│       │   ├── dto/            # Objetos de transferência de dados
+│       │   ├── security/       # JwtUtil, JwtFilter
+│       │   └── config/         # SecurityConfig
+│       └── resources/
+│           ├── application.properties
+│           └── db/
+│               ├── schema.sql  # Criação das tabelas
+│               └── data.sql    # Dados iniciais
+├── frontend/                   # Front-end (HTML/CSS/JS)
+└── docs/                       # Documentação do projeto
+```
+
+---
+
+## Links
+
+- 📋 Kanban: [link do quadro]
+- 🎨 Protótipo: [link do Figma/GitHub Pages]
+- 📄 Documentação: `docs/documentacao-sprint3.pdf`
+
+---
+
+## Integrantes do grupo
+
+| Nome | GitHub |
+|---|---|
+| [Integrante 1] | @usuario |
+| [Integrante 2] | @usuario |
+| [Integrante 3] | @usuario |

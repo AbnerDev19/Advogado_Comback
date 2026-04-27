@@ -1,0 +1,85 @@
+/* Estilos específicos para a tela de login */
+
+.login-page {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    background: var(--bg);
+    padding: 20px;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 420px;
+}
+
+.login-card {
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    box-shadow: var(--shadow-lg);
+}
+
+.login-header {
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: center;
+}
+
+.login-form .form-group {
+    margin-bottom: 20px;
+}
+
+.login-form label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-soft);
+    margin-bottom: 8px;
+}
+
+.login-form input {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    color: var(--text-light);
+    font-size: 0.95rem;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.login-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface-3);
+}
+
+.w-full {
+    width: 100%;
+}
+
+.form-footer {
+    margin-top: 24px;
+    text-align: center;
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+}
+
+.back-link {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: var(--text-light);
+}
+
+/* Responsividade */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 24px;
+    }
+}
