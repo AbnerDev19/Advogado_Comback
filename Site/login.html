@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso Restrito | Vitor Rocha Advocacia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/login-style.css">
+</head>
+<body class="login-page">
+    <main class="login-container">
+        <div class="login-card reveal-on-scroll is-visible">
+            <header class="login-header">
+                <a href="index.html" class="brand">
+                    <span class="brand-monogram">VR</span>
+                    <span class="brand-text">
+                        <strong>Vitor Rocha</strong>
+                        <small>Gestão Interna</small>
+                    </span>
+                </a>
+            </header>
+
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="email">E-mail Profissional</label>
+                    <input type="email" id="email" name="email" placeholder="nome@vitorrocha.adv.br" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary w-full">Entrar no Sistema</button>
+                </div>
+                
+                <div class="form-footer">
+                    <a href="index.html" class="back-link">← Voltar para o site</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/login-script.js"></script>
+</body>
+</html>
