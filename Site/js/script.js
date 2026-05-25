@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Envio real para o Spring Boot (PostgreSQL)
       try {
-        const response = await fetch('http://localhost:8080/api/leads', {
+        const response = await fetch('/api/leads', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(leadData)

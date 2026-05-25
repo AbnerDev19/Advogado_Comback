@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- BUSCAR LEADS DO BANCO DE DADOS ---
     async function carregarLeads() {
         try {
-            const response = await fetch('http://localhost:8080/api/leads', {
+            const response = await fetch('/api/leads', {
                 method: 'GET',
                 headers: getAuthHeaders()
             });
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const leadId = e.target.getAttribute('data-id');
                 
                 try {
-                    await fetch(`http://localhost:8080/api/leads/${leadId}/status`, {
+                    await fetch(`/api/leads/${leadId}/status`, {
                         method: 'PUT',
                         headers: getAuthHeaders(),
                         body: JSON.stringify({ status: newStatus })
@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (text && currentOpenLeadId) {
             try {
-                const response = await fetch(`http://localhost:8080/api/leads/${currentOpenLeadId}/notas`, {
+                const response = await fetch(`/api/leads/${currentOpenLeadId}/notas`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify({ texto: text })
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ARQUIVAR LEAD NO BANCO ---
     window.archiveLead = async (id) => {
         try {
-            await fetch(`http://localhost:8080/api/leads/${id}/status`, {
+            await fetch(`/api/leads/${id}/status`, {
                 method: 'PUT',
                 headers: getAuthHeaders(),
                 body: JSON.stringify({ status: 'arquivado' })
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteLeadPermanently = async (id) => {
         if (confirm('ATENÇÃO: A exclusão apagará o lead do banco de dados definitivamente. Deseja continuar?')) {
             try {
-                await fetch(`http://localhost:8080/api/leads/${id}`, {
+                await fetch(`/api/leads/${id}`, {
                     method: 'DELETE',
                     headers: getAuthHeaders()
                 });
@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- BUSCAR NOTÍCIAS DO BANCO DE DADOS ---
     async function carregarNoticias() {
         try {
-            const response = await fetch('http://localhost:8080/api/news', {
+            const response = await fetch('/api/news', {
                 method: 'GET',
                 headers: getAuthHeaders()
             });
@@ -351,14 +351,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (id) {
                 // Atualizar existente
-                await fetch(`http://localhost:8080/api/news/${id}`, {
+                await fetch(`/api/news/${id}`, {
                     method: 'PUT',
                     headers: getAuthHeaders(),
                     body: JSON.stringify(payload)
                 });
             } else {
                 // Criar nova
-                await fetch(`http://localhost:8080/api/news`, {
+                await fetch(`/api/news`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify(payload)
@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteNews = async (id) => {
         if(confirm('Tem certeza que deseja excluir esta publicação do banco de dados permanentemente?')) {
             try {
-                await fetch(`http://localhost:8080/api/news/${id}`, {
+                await fetch(`/api/news/${id}`, {
                     method: 'DELETE',
                     headers: getAuthHeaders()
                 });
