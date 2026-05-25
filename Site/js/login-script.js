@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.textContent = 'Autenticando...';
 
             try {
-                // Chamada real para a API Spring Boot (que criaremos em breve)
+                // Chamada real para a API Spring Boot
                 const response = await fetch('http://localhost:8080/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -38,18 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Erro na API de login:', error);
 
-                // =========================================================
-                // BYPASS TEMPORÁRIO (Remover após configurar o Spring Security)
-                // Permite entrar usando as credenciais do README
-                // =========================================================
-                if (email === 'admin@vitorrochaadv.com.br' && password === 'admin123') {
-                    console.warn('Aviso: Entrando via Bypass Temporário.');
-                    window.location.href = 'dashboard.html';
-                } else {
-                    alert('Erro no acesso: Email ou senha incorretos.');
-                    btn.disabled = false;
-                    btn.textContent = originalText;
-                }
+                // BYPASS REMOVIDO: A autenticação agora é 100% real validada na API
+                alert('Erro no acesso: Email ou senha incorretos.');
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
         });
     }

@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 1. MÓDULO: CONTATOS (LEADS)
     // ==========================================
-    let mockLeads = []; // Agora inicia vazio, os dados vêm da API
+    let mockLeads = []; // Os dados vêm da API
     let currentOpenLeadId = null;
 
     // Função auxiliar para criar o cabeçalho com o Token
@@ -57,7 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 mockLeads = data.map(lead => ({
                     ...lead,
                     data_registro: lead.dataCriacao,
-                    notas: [] // Se criarmos uma tabela de notas no futuro, elas virão aqui
+                    // CORREÇÃO: Agora puxamos as notas que vêm da API. Se não houver, fica array vazio.
+                    notas: lead.notas || [] 
                 }));
 
                 updateLeadStats();
@@ -188,21 +189,33 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     };
 
-    window.addLeadNote = () => {
+    // --- CORREÇÃO: ADICIONAR NOTA REAL NO BANCO DE DADOS ---
+    window.addLeadNote = async () => {
         const input = document.getElementById('new-note-text');
         const text = input.value.trim();
         
         if (text && currentOpenLeadId) {
-            const lead = mockLeads.find(l => l.id == currentOpenLeadId);
-            if (!lead.notas) lead.notas = [];
-            
-            lead.notas.push({
-                data: new Date().toISOString(),
-                texto: text
-            });
-            input.value = '';
-            renderLeadNotes();
-            alert("Nota adicionada na sessão! (A persistência de notas no banco requer a criação da entidade Notas na API futuramente).");
+            try {
+                const response = await fetch(`http://localhost:8080/api/leads/${currentOpenLeadId}/notas`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ texto: text })
+                });
+
+                if (response.ok) {
+                    input.value = '';
+                    await carregarLeads(); // Puxa os dados atualizados da API
+                    
+                    // Atualiza o ID atual e recarrega as notas na tela
+                    const leadAtualizado = mockLeads.find(l => l.id == currentOpenLeadId);
+                    currentOpenLeadId = leadAtualizado.id;
+                    renderLeadNotes();
+                } else {
+                    alert("Erro ao salvar a nota.");
+                }
+            } catch (error) {
+                console.error("Erro ao adicionar nota:", error);
+            }
         }
     };
 
@@ -236,7 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
-
 
     // ==========================================
     // 2. MÓDULO: PUBLICAÇÕES E NOTÍCIAS

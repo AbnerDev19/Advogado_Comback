@@ -8,6 +8,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -17,6 +19,12 @@ public class SecurityConfig {
 
     @Autowired
     private JwtFilter jwtFilter;
+
+    // NOVO: Bean responsável por encriptar e validar as senhas na base de dados
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,10 +39,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // ROTAS PÚBLICAS (Qualquer pessoa pode aceder sem Token)
                 
-                // ---> NOVO: Liberando o acesso para a documentação do Swagger
+                // ---> Liberando o acesso para a documentação do Swagger
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                // Suas regras anteriores continuam iguais
+                // Regras da API
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll() // Para poder fazer login
                 .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()      // Para o cliente do site conseguir enviar mensagem
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()        // Para o site conseguir listar as notícias
