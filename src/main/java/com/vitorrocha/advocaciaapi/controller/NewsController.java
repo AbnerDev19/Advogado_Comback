@@ -21,31 +21,30 @@ public class NewsController {
     @Autowired
     private NewsRepository repository;
 
-    // --- ROTA DE CRIAR NOTÍCIA ---
-    @Operation(summary = "Criar uma nova notícia", description = "Publica um novo artigo no banco de dados. Atenção: Exige que o advogado esteja logado com o Token (cadeado verde).")
+    @Operation(summary = "Criar uma nova notícia", description = "Publica um novo artigo no banco de dados. Exige Token.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Notícia salva com sucesso!"),
-        @ApiResponse(responseCode = "403", description = "Erro: Você esqueceu de colocar o Token no cadeado verde.")
+        @ApiResponse(responseCode = "201", description = "Notícia criada com sucesso!"),
+        @ApiResponse(responseCode = "403", description = "Erro: Token inválido ou ausente.")
     })
     @PostMapping
-    public News criarNews(@RequestBody News news) {
-        return repository.save(news);
+    // CORRIGIDO: Antes retornava News diretamente (sempre HTTP 200).
+    // O correto ao criar um recurso é retornar ResponseEntity com status 201 Created.
+    public ResponseEntity<News> criarNews(@RequestBody News news) {
+        return ResponseEntity.status(201).body(repository.save(news));
     }
 
-    // --- ROTA DE VER NOTÍCIAS ---
-    @Operation(summary = "Ver todas as notícias", description = "Mostra uma lista com todos os artigos já publicados no site. Qualquer pessoa pode ver (não precisa de token).")
-    @ApiResponse(responseCode = "200", description = "Deu tudo certo! Lista carregada.")
+    @Operation(summary = "Ver todas as notícias", description = "Lista todos os artigos publicados. Público, não precisa de token.")
+    @ApiResponse(responseCode = "200", description = "Lista carregada com sucesso.")
     @GetMapping
     public List<News> listarTodas() {
         return repository.findAll();
     }
 
-    // --- ROTA DE ATUALIZAR NOTÍCIA ---
-    @Operation(summary = "Editar uma notícia", description = "Atualiza os textos de uma publicação que já existe. Exige Token (cadeado verde).")
+    @Operation(summary = "Editar uma notícia", description = "Atualiza os textos de uma publicação existente. Exige Token.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Notícia atualizada com sucesso!"),
-        @ApiResponse(responseCode = "404", description = "Erro: Nenhuma notícia encontrada com esse ID."),
-        @ApiResponse(responseCode = "403", description = "Erro: Você esqueceu de colocar o Token no cadeado verde.")
+        @ApiResponse(responseCode = "404", description = "Notícia não encontrada."),
+        @ApiResponse(responseCode = "403", description = "Erro: Token inválido ou ausente.")
     })
     @PutMapping("/{id}")
     public ResponseEntity<News> atualizarNews(@PathVariable Long id, @RequestBody News newsAtualizada) {
@@ -61,12 +60,11 @@ public class NewsController {
                 }).orElse(ResponseEntity.notFound().build());
     }
 
-    // --- ROTA DE DELETAR NOTÍCIA ---
-    @Operation(summary = "Apagar uma notícia", description = "Deleta permanentemente um artigo do blog. Exige Token (cadeado verde).")
+    @Operation(summary = "Apagar uma notícia", description = "Deleta permanentemente um artigo. Exige Token.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Notícia apagada com sucesso!"),
-        @ApiResponse(responseCode = "404", description = "Erro: Nenhuma notícia encontrada com esse ID para apagar."),
-        @ApiResponse(responseCode = "403", description = "Erro: Você esqueceu de colocar o Token no cadeado verde.")
+        @ApiResponse(responseCode = "404", description = "Notícia não encontrada."),
+        @ApiResponse(responseCode = "403", description = "Erro: Token inválido ou ausente.")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletarNews(@PathVariable Long id) {

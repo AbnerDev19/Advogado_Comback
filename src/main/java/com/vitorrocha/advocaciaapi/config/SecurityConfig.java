@@ -12,6 +12,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -20,37 +25,42 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtFilter;
 
-    // NOVO: Bean responsável por encriptar e validar as senhas na base de dados
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // CORRIGIDO: "cors -> cors.configure(http)" estava errado no Spring Security 6+.
+    // A forma correta é definir um bean CorsConfigurationSource e usar cors.configurationSource(...)
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("*")); // Em produção, coloque o domínio real: "https://seusite.com.br"
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configure(http))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            
-            // Dizemos ao Spring para não guardar sessão (porque quem manda é o Token JWT)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            
-            // AQUI DEFINIMOS AS REGRAS!
             .authorizeHttpRequests(auth -> auth
-                // ROTAS PÚBLICAS (Qualquer pessoa pode aceder sem Token)
-                
-                // ---> Liberando o acesso para a documentação do Swagger
+                // Rotas públicas: Swagger
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-
-                // Regras da API
-                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll() // Para poder fazer login
-                .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()      // Para o cliente do site conseguir enviar mensagem
-                .requestMatchers(HttpMethod.GET, "/api/news").permitAll()        // Para o site conseguir listar as notícias
-                
-                // ROTAS PRIVADAS (Todas as outras exigem Token válido - ex: Dashboard, deletar leads, etc.)
-                .anyRequest().authenticated() 
+                // Rotas públicas: API
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
+                // Todas as outras rotas exigem autenticação
+                .anyRequest().authenticated()
             )
-            // Coloca o nosso "Porteiro" na porta da frente
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
