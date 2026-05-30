@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- BUSCAR NOTÍCIAS DO BANCO DE DADOS ---
     async function carregarNoticias() {
         try {
-            const response = await fetch('/api/news/admin', {
+            const response = await fetch('/api/news', {
                 method: 'GET',
                 headers: getAuthHeaders()
             });
@@ -386,40 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ==========================================
-    // 3. MÓDULO: STATS (cards do topo)
-    // ==========================================
-    async function carregarStats() {
-        try {
-            const response = await fetch('/api/leads/stats', {
-                method: 'GET',
-                headers: getAuthHeaders()
-            });
-            if (response.ok) {
-                const stats = await response.json();
-                const el = (id) => document.getElementById(id);
-                if (el('count-novos'))     el('count-novos').textContent     = stats.novo_contato ?? 0;
-                if (el('count-andamento')) el('count-andamento').textContent = stats.em_andamento ?? 0;
-                if (el('count-total'))     el('count-total').textContent     = stats.total ?? 0;
-            }
-        } catch (error) {
-            console.error('Erro ao carregar stats:', error);
-        }
-    }
-
-    // ==========================================
-    // 4. LOGOUT
-    // ==========================================
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('vr_jwt_token');
-            window.location.href = 'login.html';
-        });
-    }
-
     // === INICIALIZAÇÃO GERAL DO DASHBOARD ===
     carregarLeads();
     carregarNoticias();
-    carregarStats();
 });
