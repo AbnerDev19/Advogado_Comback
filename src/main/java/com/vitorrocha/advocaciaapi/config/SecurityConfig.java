@@ -30,12 +30,10 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // CORRIGIDO: "cors -> cors.configure(http)" estava errado no Spring Security 6+.
-    // A forma correta é definir um bean CorsConfigurationSource e usar cors.configurationSource(...)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*")); // Em produção, coloque o domínio real: "https://seusite.com.br"
+        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
@@ -52,13 +50,16 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Rotas públicas: Swagger
+                // Swagger — público
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                // Rotas públicas: API
+                // Auth — público
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                // Leads — POST público (formulário do site); resto exige JWT
                 .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()
+                // News — GET lista publicados público; /admin e outros métodos exigem JWT
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
-                // Todas as outras rotas exigem autenticação
+                .requestMatchers(HttpMethod.GET, "/api/news/{slug}").permitAll()
+                // Tudo mais exige autenticação
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
