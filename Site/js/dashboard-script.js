@@ -12,12 +12,7 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('is-active');
 }
 
-// Fechar modais ao clicar fora
-window.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) {
-        closeModal(e.target.id);
-    }
-});
+
 
 // ==========================================
 // LÓGICA DO DASHBOARD

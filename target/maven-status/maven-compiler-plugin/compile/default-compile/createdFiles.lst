@@ -1,0 +1,16 @@
+com\vitorrocha\advocaciaapi\model\News.class
+com\vitorrocha\advocaciaapi\AdvocaciaapiApplication.class
+com\vitorrocha\advocaciaapi\config\SecurityConfig.class
+com\vitorrocha\advocaciaapi\repository\LeadRepository.class
+com\vitorrocha\advocaciaapi\dto\LoginResponseDTO.class
+com\vitorrocha\advocaciaapi\controller\NewsController.class
+com\vitorrocha\advocaciaapi\security\JwtUtil.class
+com\vitorrocha\advocaciaapi\controller\AuthController.class
+com\vitorrocha\advocaciaapi\controller\LeadController.class
+com\vitorrocha\advocaciaapi\repository\UsuarioRepository.class
+com\vitorrocha\advocaciaapi\security\JwtFilter.class
+com\vitorrocha\advocaciaapi\config\SwaggerConfig.class
+com\vitorrocha\advocaciaapi\model\Lead.class
+com\vitorrocha\advocaciaapi\repository\NewsRepository.class
+com\vitorrocha\advocaciaapi\model\Usuario.class
+com\vitorrocha\advocaciaapi\dto\LoginRequestDTO.class

@@ -1,0 +1,16 @@
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\AdvocaciaapiApplication.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\config\SecurityConfig.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\config\SwaggerConfig.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\controller\AuthController.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\controller\LeadController.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\controller\NewsController.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\dto\LoginRequestDTO.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\dto\LoginResponseDTO.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\model\Lead.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\model\News.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\model\Usuario.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\repository\LeadRepository.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\repository\NewsRepository.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\repository\UsuarioRepository.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\security\JwtFilter.java
+C:\Users\Abner\Desktop\advocaciaapi\src\main\java\com\vitorrocha\advocaciaapi\security\JwtUtil.java

@@ -187,4 +187,76 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ── Carregar Notícias Dinâmicas na página noticias.html ──
+  const articlesGrid = document.getElementById('articles-grid');
+  
+  if (articlesGrid) {
+    async function carregarNoticiasPublicas() {
+      try {
+        const response = await fetch('http://localhost:8080/api/news');
+        if (response.ok) {
+          const noticias = await response.json();
+          // Filtra só as que estão com status 'Publicado' e ordena da mais recente para a mais antiga
+          const publicadas = noticias
+                .filter(n => n.status === 'Publicado')
+                .sort((a,b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
+          
+          if (publicadas.length > 0) {
+            articlesGrid.innerHTML = ''; // Limpa os artigos estáticos de teste
+            
+            publicadas.forEach((news, index) => {
+              const isFeatured = index === 0 ? 'article-featured' : '';
+              // Formata a data para um padrão bonito (Ex: abril de 2025)
+              const dataFormatada = new Date(news.dataPublicacao).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+              
+              const articleHTML = `
+                <article class="article-card ${isFeatured} reveal visible">
+                  <div class="article-meta">
+                    <span class="article-cat">${news.categoria}</span>
+                    <span class="article-sep">·</span>
+                    <span class="article-date">${dataFormatada}</span>
+                  </div>
+                  <h2>${news.titulo}</h2>
+                  
+                  <div class="news-resumo-box">
+                    <p>${news.resumo}</p>
+                  </div>
+                  
+                  <div class="news-conteudo-box" style="display: none; white-space: pre-wrap; font-size: 0.95rem; color: var(--text-soft); line-height: 1.8; margin-top: 15px;">${news.conteudo}</div>
+                  
+                  <button class="card-link" onclick="toggleLeiaMais(this)" style="background:none; border:none; padding:0; cursor:pointer; font-size:1rem; font-family:var(--font-body); margin-top:16px;">
+                    Ler artigo completo <span aria-hidden="true">→</span>
+                  </button>
+                </article>
+              `;
+              articlesGrid.insertAdjacentHTML('beforeend', articleHTML);
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar notícias do banco:", error);
+      }
+    }
+    carregarNoticiasPublicas();
+  }
+
 });
+
+// ── Função do Botão Leia Mais (Escopo Global) ──
+window.toggleLeiaMais = function(btn) {
+  const article = btn.closest('.article-card');
+  const resumo = article.querySelector('.news-resumo-box');
+  const conteudo = article.querySelector('.news-conteudo-box');
+  
+  if (conteudo.style.display === 'none') {
+    // Expandir
+    conteudo.style.display = 'block';
+    resumo.style.display = 'none';
+    btn.innerHTML = 'Recolher artigo <span aria-hidden="true">↑</span>';
+  } else {
+    // Recolher
+    conteudo.style.display = 'none';
+    resumo.style.display = 'block';
+    btn.innerHTML = 'Ler artigo completo <span aria-hidden="true">→</span>';
+  }
+};
