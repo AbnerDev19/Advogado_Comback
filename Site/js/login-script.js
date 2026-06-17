@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.textContent = 'Autenticando...';
 
             try {
-                const response = await fetch(`${window.API_BASE_URL}/api/auth/login`, {
+                // ATENÇÃO: Troque esta URL pela URL do Render depois
+                const response = await fetch('https://SUA-API-NO-RENDER.onrender.com/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: email, senha: password })
