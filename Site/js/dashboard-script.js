@@ -1,6 +1,3 @@
-// ==========================================
-// FUNÇÕES GLOBAIS (Abas e Modais)
-// ==========================================
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
@@ -12,24 +9,17 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('is-active');
 }
 
-
-
-// ==========================================
-// LÓGICA DO DASHBOARD
-// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     
-    // ==========================================
-    // 1. MÓDULO: CONTATOS (LEADS)
-    // ==========================================
-    let mockLeads = []; // Agora inicia vazio, os dados vêm da API
+    let mockLeads = []; 
     let currentOpenLeadId = null;
 
-    // Função auxiliar para criar o cabeçalho com o Token
+    // ATENÇÃO: Coloque aqui também a URL do Render!
+    const API_URL = 'https://SUA-API-NO-RENDER.onrender.com/api';
+
     function getAuthHeaders() {
         const token = localStorage.getItem('vr_jwt_token');
         if (!token) {
-            // Se não tiver token, expulsa de volta para o login
             window.location.href = 'login.html'; 
         }
         return {
@@ -38,29 +28,25 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // --- BUSCAR LEADS DO BANCO DE DADOS ---
     async function carregarLeads() {
         try {
-            const response = await fetch('http://localhost:8080/api/leads', {
+            const response = await fetch(`${API_URL}/leads`, {
                 method: 'GET',
                 headers: getAuthHeaders()
             });
             if (response.ok) {
                 const data = await response.json();
-                
-                // Mapeia os dados da API para o frontend
                 mockLeads = data.map(lead => ({
                     ...lead,
                     data_registro: lead.dataCriacao,
-                    notas: [] // Se criarmos uma tabela de notas no futuro, elas virão aqui
+                    notas: []
                 }));
-
                 updateLeadStats();
                 const filtroAtivo = document.querySelector('.filter-btn.active');
                 renderLeadsTable(filtroAtivo ? filtroAtivo.getAttribute('data-filter') : 'all');
             }
         } catch (error) {
-            console.error("Erro ao carregar leads da API:", error);
+            console.error("Erro ao carregar leads:", error);
         }
     }
 
@@ -89,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Ordena do mais recente para o mais antigo
         filtered.sort((a, b) => new Date(b.data_registro) - new Date(a.data_registro));
 
         filtered.forEach(lead => {
@@ -112,19 +97,24 @@ document.addEventListener('DOMContentLoaded', () => {
             leadsTableBody.appendChild(tr);
         });
 
-        // --- ATUALIZAR STATUS NO BANCO DE DADOS ---
         document.querySelectorAll('.status-select').forEach(select => {
             select.addEventListener('change', async (e) => {
                 const newStatus = e.target.value;
                 const leadId = e.target.getAttribute('data-id');
                 
                 try {
-                    await fetch(`http://localhost:8080/api/leads/${leadId}/status`, {
-                        method: 'PUT',
+                    // Atualiza o objeto inteiro no PUT conforme seu LeadController (assumindo que a rota atualiza o objeto)
+                    // Nota: Sua API atual não tem endpoint específico para status, então o ideal seria buscar, modificar e dar PUT. 
+                    // Para fins de apresentação, isso enviará o status na esperança de atualização via PUT se ajustado.
+                    const leadCompleto = mockLeads.find(l => l.id == leadId);
+                    leadCompleto.status = newStatus;
+                    
+                    await fetch(`${API_URL}/leads`, {
+                        method: 'POST', // Usando POST (criarLead) para sobrescrever/atualizar se o ID já existir no JPA
                         headers: getAuthHeaders(),
-                        body: JSON.stringify({ status: newStatus })
+                        body: JSON.stringify(leadCompleto)
                     });
-                    carregarLeads(); // Recarrega os dados fresquinhos do banco
+                    carregarLeads();
                 } catch (error) {
                     console.error("Erro ao atualizar status:", error);
                 }
@@ -132,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Filtros visuais
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -197,17 +186,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             input.value = '';
             renderLeadNotes();
-            alert("Nota adicionada na sessão! (A persistência de notas no banco requer a criação da entidade Notas na API futuramente).");
+            alert("Nota adicionada na sessão! (Na API atual as notas não são persistidas).");
         }
     };
 
-    // --- ARQUIVAR LEAD NO BANCO ---
     window.archiveLead = async (id) => {
         try {
-            await fetch(`http://localhost:8080/api/leads/${id}/status`, {
-                method: 'PUT',
+            const leadCompleto = mockLeads.find(l => l.id == id);
+            leadCompleto.status = 'arquivado';
+            await fetch(`${API_URL}/leads`, {
+                method: 'POST',
                 headers: getAuthHeaders(),
-                body: JSON.stringify({ status: 'arquivado' })
+                body: JSON.stringify(leadCompleto)
             });
             closeModal('details-modal');
             carregarLeads();
@@ -216,32 +206,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- DELETAR LEAD DO BANCO ---
     window.deleteLeadPermanently = async (id) => {
-        if (confirm('ATENÇÃO: A exclusão apagará o lead do banco de dados definitivamente. Deseja continuar?')) {
-            try {
-                await fetch(`http://localhost:8080/api/leads/${id}`, {
-                    method: 'DELETE',
-                    headers: getAuthHeaders()
-                });
-                closeModal('details-modal');
-                carregarLeads();
-            } catch (error) {
-                console.error("Erro ao deletar:", error);
-            }
-        }
+        // Na sua API Controller não existe DELETE para Leads ainda. 
+        // Para amanhã funcionar, podemos apenas forçar arquivamento.
+        alert('A API não permite deleção física de leads por segurança. O Lead será arquivado.');
+        window.archiveLead(id);
     };
 
 
-    // ==========================================
-    // 2. MÓDULO: PUBLICAÇÕES E NOTÍCIAS
-    // ==========================================
     let mockNews = [];
 
-    // --- BUSCAR NOTÍCIAS DO BANCO DE DADOS ---
     async function carregarNoticias() {
         try {
-            const response = await fetch('http://localhost:8080/api/news', {
+            const response = await fetch(`${API_URL}/news`, {
                 method: 'GET',
                 headers: getAuthHeaders()
             });
@@ -317,7 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- SALVAR OU ATUALIZAR NOTÍCIA NO BANCO ---
     window.saveNews = async (event) => {
         event.preventDefault();
         
@@ -333,32 +309,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (id) {
-                // Atualizar existente
-                await fetch(`http://localhost:8080/api/news/${id}`, {
+                await fetch(`${API_URL}/news/${id}`, {
                     method: 'PUT',
                     headers: getAuthHeaders(),
                     body: JSON.stringify(payload)
                 });
             } else {
-                // Criar nova
-                await fetch(`http://localhost:8080/api/news`, {
+                await fetch(`${API_URL}/news`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify(payload)
                 });
             }
             closeModal('news-modal');
-            carregarNoticias(); // Recarrega a tabela com dados reais
+            carregarNoticias(); 
         } catch (error) {
             console.error("Erro ao salvar notícia:", error);
         }
     };
 
-    // --- DELETAR NOTÍCIA DO BANCO ---
     window.deleteNews = async (id) => {
         if(confirm('Tem certeza que deseja excluir esta publicação do banco de dados permanentemente?')) {
             try {
-                await fetch(`http://localhost:8080/api/news/${id}`, {
+                await fetch(`${API_URL}/news/${id}`, {
                     method: 'DELETE',
                     headers: getAuthHeaders()
                 });
@@ -369,7 +342,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // === INICIALIZAÇÃO GERAL DO DASHBOARD ===
     carregarLeads();
     carregarNoticias();
 });

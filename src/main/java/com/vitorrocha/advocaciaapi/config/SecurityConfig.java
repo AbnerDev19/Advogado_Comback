@@ -10,6 +10,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -21,7 +26,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configure(http))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             
             // Dizemos ao Spring para não guardar sessão (porque quem manda é o Token JWT)
@@ -29,22 +34,32 @@ public class SecurityConfig {
             
             // AQUI DEFINIMOS AS REGRAS!
             .authorizeHttpRequests(auth -> auth
-                // ROTAS PÚBLICAS (Qualquer pessoa pode aceder sem Token)
-                
-                // ---> NOVO: Liberando o acesso para a documentação do Swagger
+                // ROTAS PÚBLICAS
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-
-                // Suas regras anteriores continuam iguais
-                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll() // Para poder fazer login
-                .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()      // Para o cliente do site conseguir enviar mensagem
-                .requestMatchers(HttpMethod.GET, "/api/news").permitAll()        // Para o site conseguir listar as notícias
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
                 
-                // ROTAS PRIVADAS (Todas as outras exigem Token válido - ex: Dashboard, deletar leads, etc.)
+                // ROTAS PRIVADAS
                 .anyRequest().authenticated() 
             )
             // Coloca o nosso "Porteiro" na porta da frente
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // Libera a comunicação entre o site (Vercel) e a API (Render)
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // Permite qualquer origem para a apresentação
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }

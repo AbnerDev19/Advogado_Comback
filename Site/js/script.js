@@ -1,10 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-
-  // ── Ano no footer ──
   const yearEl = document.getElementById('current-year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // ── Header scroll ──
   const header = document.getElementById('main-header');
   if (header) {
     const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 24);
@@ -12,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('scroll', onScroll, { passive: true });
   }
 
-  // ── Menu mobile ──
   const menuToggle = document.getElementById('menu-toggle');
   const navMenu    = document.getElementById('nav-menu');
   if (menuToggle && navMenu) {
@@ -32,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── Scroll suave ──
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
       const id = this.getAttribute('href');
@@ -54,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ── Reveal on scroll ──
   const reveals = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window && reveals.length) {
     const obs = new IntersectionObserver((entries, o) => {
@@ -70,18 +64,15 @@ document.addEventListener('DOMContentLoaded', () => {
     reveals.forEach(el => el.classList.add('visible'));
   }
 
-  // ── Tema claro/escuro ──
   const themeBtn = document.getElementById('theme-toggle');
   const root     = document.documentElement;
   if (themeBtn) {
     const saved = localStorage.getItem('vr_theme');
-    
     if (saved === 'dark') {
         root.removeAttribute('data-theme');
     } else {
         root.setAttribute('data-theme', 'light');
     }
-
     themeBtn.addEventListener('click', () => {
       const isLight = root.getAttribute('data-theme') === 'light';
       if (isLight) {
@@ -94,13 +85,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── Formulário de contato ──
   const form      = document.getElementById('lead-form');
   const submitBtn = document.getElementById('submit-btn');
   const successEl = document.getElementById('form-success');
 
   if (form) {
-    // Validação de campo
     function validateField(input, errorId) {
       const group = input.closest('.form-group');
       const error = document.getElementById(errorId);
@@ -110,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return valid;
     }
 
-    // Limpar erro ao digitar
     form.querySelectorAll('input, textarea').forEach(el => {
       el.addEventListener('input', () => {
         el.closest('.form-group').classList.remove('has-error');
@@ -125,17 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const reasonInput  = document.getElementById('client-reason');
       const areaInput    = document.getElementById('client-area');
 
-      // Validação
       const v1 = validateField(nameInput, 'error-name');
       const v2 = validateField(contactInput, 'error-contact');
       const v3 = validateField(reasonInput, 'error-reason');
       if (!v1 || !v2 || !v3) return;
 
-      // Loading state
       submitBtn.classList.add('loading');
       submitBtn.disabled = true;
 
-      // Estrutura do lead (pronta para enviar ao backend)
       const leadData = {
         nome:        nameInput.value.trim(),
         contato:     contactInput.value.trim(),
@@ -144,24 +129,20 @@ document.addEventListener('DOMContentLoaded', () => {
         status:      'novo_contato',
         origem:      'formulario_site'
       };
-
-      console.log('[Lead] Payload para banco de dados:', leadData);
       
-      // Envio real para o Spring Boot (PostgreSQL)
       try {
-        const response = await fetch('http://localhost:8080/api/leads', {
+        // ATENÇÃO: Troque esta URL pela URL do Render depois
+        const response = await fetch('https://SUA-API-NO-RENDER.onrender.com/api/leads', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(leadData)
         });
 
         if (response.ok) {
-            // Sucesso — mostrar feedback inline
             submitBtn.classList.remove('loading');
             submitBtn.disabled = false;
             form.reset();
 
-            // Esconde o formulário, mostra sucesso
             form.querySelectorAll('.form-group, .form-privacy, #submit-btn').forEach(el => {
                 el.style.display = 'none';
             });
@@ -178,35 +159,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── Rastrear clique no WhatsApp (Analytics) ──
-  document.querySelectorAll('a[href*="wa.me"]').forEach(link => {
-    link.addEventListener('click', () => {
-      if (typeof gtag === 'function') {
-        gtag('event', 'click_whatsapp', { event_category: 'contato' });
-      }
-    });
-  });
-
-  // ── Carregar Notícias Dinâmicas na página noticias.html ──
   const articlesGrid = document.getElementById('articles-grid');
   
   if (articlesGrid) {
     async function carregarNoticiasPublicas() {
       try {
-        const response = await fetch('http://localhost:8080/api/news');
+        // ATENÇÃO: Troque esta URL pela URL do Render depois
+        const response = await fetch('https://SUA-API-NO-RENDER.onrender.com/api/news');
         if (response.ok) {
           const noticias = await response.json();
-          // Filtra só as que estão com status 'Publicado' e ordena da mais recente para a mais antiga
           const publicadas = noticias
                 .filter(n => n.status === 'Publicado')
                 .sort((a,b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao));
           
           if (publicadas.length > 0) {
-            articlesGrid.innerHTML = ''; // Limpa os artigos estáticos de teste
+            articlesGrid.innerHTML = ''; 
             
             publicadas.forEach((news, index) => {
               const isFeatured = index === 0 ? 'article-featured' : '';
-              // Formata a data para um padrão bonito (Ex: abril de 2025)
               const dataFormatada = new Date(news.dataPublicacao).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
               
               const articleHTML = `
@@ -217,13 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="article-date">${dataFormatada}</span>
                   </div>
                   <h2>${news.titulo}</h2>
-                  
-                  <div class="news-resumo-box">
-                    <p>${news.resumo}</p>
-                  </div>
-                  
+                  <div class="news-resumo-box"><p>${news.resumo}</p></div>
                   <div class="news-conteudo-box" style="display: none; white-space: pre-wrap; font-size: 0.95rem; color: var(--text-soft); line-height: 1.8; margin-top: 15px;">${news.conteudo}</div>
-                  
                   <button class="card-link" onclick="toggleLeiaMais(this)" style="background:none; border:none; padding:0; cursor:pointer; font-size:1rem; font-family:var(--font-body); margin-top:16px;">
                     Ler artigo completo <span aria-hidden="true">→</span>
                   </button>
@@ -239,22 +204,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     carregarNoticiasPublicas();
   }
-
 });
 
-// ── Função do Botão Leia Mais (Escopo Global) ──
 window.toggleLeiaMais = function(btn) {
   const article = btn.closest('.article-card');
   const resumo = article.querySelector('.news-resumo-box');
   const conteudo = article.querySelector('.news-conteudo-box');
   
   if (conteudo.style.display === 'none') {
-    // Expandir
     conteudo.style.display = 'block';
     resumo.style.display = 'none';
     btn.innerHTML = 'Recolher artigo <span aria-hidden="true">↑</span>';
   } else {
-    // Recolher
     conteudo.style.display = 'none';
     resumo.style.display = 'block';
     btn.innerHTML = 'Ler artigo completo <span aria-hidden="true">→</span>';
