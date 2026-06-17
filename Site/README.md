@@ -69,12 +69,9 @@ Abra o arquivo index.html no navegador
 Não é necessário servidor backend — projeto 100% front-end
 
 📌 Observações importantes
--O formulário de contato e login são simulados (não possuem integração com backend)
--Os dados do painel (leads e conteúdos) são manipulados via JavaScript
--Estrutura pronta para futura integração com:
--API
--Banco de dados
--Sistema real de autenticação
+-O formulário de contato, o login e o painel administrativo são integrados a uma API real (Spring Boot + PostgreSQL/Supabase), com autenticação via JWT
+-Antes de usar, configure a URL real da API em /js/config.js (window.API_BASE_URL)
+-As credenciais do banco de dados e a chave JWT do backend são configuradas por variáveis de ambiente (ver application.properties), nunca diretamente no código
 
 🎯 Objetivo do projeto
 

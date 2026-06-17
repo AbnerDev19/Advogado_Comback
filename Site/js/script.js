@@ -68,10 +68,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const root     = document.documentElement;
   if (themeBtn) {
     const saved = localStorage.getItem('vr_theme');
-    if (saved === 'dark') {
-        root.removeAttribute('data-theme');
-    } else {
+    if (saved === 'light') {
         root.setAttribute('data-theme', 'light');
+    } else {
+        root.removeAttribute('data-theme');
     }
     themeBtn.addEventListener('click', () => {
       const isLight = root.getAttribute('data-theme') === 'light';
@@ -131,8 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       
       try {
-        // ATENÇÃO: Troque esta URL pela URL do Render depois
-        const response = await fetch('https://SUA-API-NO-RENDER.onrender.com/api/leads', {
+        const response = await fetch(`${window.API_BASE_URL}/api/leads`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(leadData)
@@ -164,8 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (articlesGrid) {
     async function carregarNoticiasPublicas() {
       try {
-        // ATENÇÃO: Troque esta URL pela URL do Render depois
-        const response = await fetch('https://SUA-API-NO-RENDER.onrender.com/api/news');
+        const response = await fetch(`${window.API_BASE_URL}/api/news`);
         if (response.ok) {
           const noticias = await response.json();
           const publicadas = noticias

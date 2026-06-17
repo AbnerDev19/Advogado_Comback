@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let mockLeads = []; 
     let currentOpenLeadId = null;
 
-    // ATENÇÃO: Coloque aqui também a URL do Render!
-    const API_URL = 'https://SUA-API-NO-RENDER.onrender.com/api';
+    // URL base da API definida centralmente em js/config.js
+    const API_URL = `${window.API_BASE_URL}/api`;
 
     function getAuthHeaders() {
         const token = localStorage.getItem('vr_jwt_token');
@@ -103,16 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const leadId = e.target.getAttribute('data-id');
                 
                 try {
-                    // Atualiza o objeto inteiro no PUT conforme seu LeadController (assumindo que a rota atualiza o objeto)
-                    // Nota: Sua API atual não tem endpoint específico para status, então o ideal seria buscar, modificar e dar PUT. 
-                    // Para fins de apresentação, isso enviará o status na esperança de atualização via PUT se ajustado.
-                    const leadCompleto = mockLeads.find(l => l.id == leadId);
-                    leadCompleto.status = newStatus;
-                    
-                    await fetch(`${API_URL}/leads`, {
-                        method: 'POST', // Usando POST (criarLead) para sobrescrever/atualizar se o ID já existir no JPA
+                    await fetch(`${API_URL}/leads/${leadId}/status`, {
+                        method: 'PATCH',
                         headers: getAuthHeaders(),
-                        body: JSON.stringify(leadCompleto)
+                        body: JSON.stringify({ status: newStatus })
                     });
                     carregarLeads();
                 } catch (error) {
@@ -192,12 +186,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.archiveLead = async (id) => {
         try {
-            const leadCompleto = mockLeads.find(l => l.id == id);
-            leadCompleto.status = 'arquivado';
-            await fetch(`${API_URL}/leads`, {
-                method: 'POST',
+            await fetch(`${API_URL}/leads/${id}/status`, {
+                method: 'PATCH',
                 headers: getAuthHeaders(),
-                body: JSON.stringify(leadCompleto)
+                body: JSON.stringify({ status: 'arquivado' })
             });
             closeModal('details-modal');
             carregarLeads();
