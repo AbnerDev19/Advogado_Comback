@@ -34,6 +34,9 @@ public class SecurityConfig {
             
             // AQUI DEFINIMOS AS REGRAS!
             .authorizeHttpRequests(auth -> auth
+                // LIBERAR REQUISIÇÕES DE PREFLIGHT (OPTIONS) DO NAVEGADOR
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                 // ROTAS PÚBLICAS
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
@@ -49,11 +52,11 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Libera a comunicação entre o site (Vercel) e a API (Render)
+    // Libera a comunicação entre o site (Vercel) e a API
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // Permite qualquer origem para a apresentação
+        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // Permite qualquer origem
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
