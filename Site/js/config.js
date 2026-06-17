@@ -7,4 +7,4 @@
  * (script.js, login-script.js, dashboard-script.js), o que fazia todas as
  * chamadas à API falharem silenciosamente. Agora há um único lugar para editar.
  */
-window.API_BASE_URL = 'https://SUA-API-NO-RENDER.onrender.com';
+window.API_BASE_URL = 'https://advogadocomback-production.up.railway.app';
